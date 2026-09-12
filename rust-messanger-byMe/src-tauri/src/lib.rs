@@ -48,6 +48,10 @@ pub fn run(){
         .plugin(tauri_plugin_dialog::init())
     // Создаём plugin opener
         .plugin(tauri_plugin_opener::init())
+    // Подключаем fs плагин для работы с файлами
+        .plugin(tauri_plugin_fs::init())
+    // Подключаем path плагин для работы с путями
+        .plugin(tauri_plugin_path::init())
     // Запускаем приложение
         .run(tauri::generate_context!())
     // Если запуск завершился с ошибкой то сообщаем об этом

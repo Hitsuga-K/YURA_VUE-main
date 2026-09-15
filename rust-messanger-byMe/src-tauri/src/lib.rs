@@ -31,6 +31,16 @@ pub fn run(){
 
             kind: MigrationKind::Up,
         },
+        // Описание третьей миграции - добавляем таблицу chats
+        Migration {
+            version: 3,
+
+            description: "create_chats_table",
+
+            sql: include_str!("../migrations/0003_chars.sql"),
+
+                       kind: MigrationKind::Up,
+        },
     ];
 
     // Создаём сборщик приложения Tauri

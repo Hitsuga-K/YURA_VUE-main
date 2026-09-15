@@ -8,6 +8,9 @@ import AppHeader from "./components/AppHeader.vue";
 import MessageList from "./components/MessageList.vue";
 import MessageComposer from "./components/MessageComposer.vue";
 import UserSwitcher from "./components/UserSwitcher.vue";
+import ChatSideBar from "./components/ChatSideBar.vue";
+import type { Chat } from "./types/chats.ts";
+
 
 const USERS: User[] = [
   { id: 1, name: "Юра" },
@@ -15,6 +18,10 @@ const USERS: User[] = [
 ];
 
 const messages = ref<Message[]>([]);
+const chats = ref<Chat[]>([]);
+const activeChat = ref<Chat | null>(null);
+const activeChatId = ref(1);
+
 const currentUser = ref<User>(USERS[0]);
 
 const status = ref("Connection...")
@@ -44,7 +51,26 @@ function saveBrowserMessages() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.value));
 }
 
-async function loadMessages(){
+async function LoadChats() {
+  if (!db) return;
+
+  chats.value = await db.select<Chat[]>(
+    "SELECT id, title, subtitle FROM chats ORDER BY id ASC",
+  );
+
+  if (chats.value.length > 0) {
+    await selectChat(chats.value[0]);
+  }
+  
+}
+async function selectChat(chat: Chat) {
+  activeChat.value = chat;
+  activeChatId.value = chat.id;
+  await loadMessages(chat.id);
+  
+}
+
+async function loadMessages(chatId: number){
   if (useBrowserStorage) {
     loadBrowserMessages();
     return;
@@ -52,7 +78,8 @@ async function loadMessages(){
   if (!db) return;
 
   const rows = await db.select<Array<{ id: number; author: string; body: string; created_at: string; attachments: string | null }>>(
-      "SELECT id, author, body, created_at, attachments FROM messages ORDER BY id ASC",
+      "SELECT id, author, body, created_at, attachments FROM messages WHERE chat_id = $1 ORDER BY id ASC",
+      [chatId]
   );
 
   messages.value = rows.map(row => ({
@@ -84,16 +111,14 @@ async function sendMessage(body: string, attachments?: string[] | null){
   }
   if (!db) return;
 
-  const attachmentsJson = attachments && attachments.length > 0
-    ? JSON.stringify(attachments)
-    : null;
+  if (!activeChat.value) return;
 
   await db.execute(
-      "INSERT INTO messages (author, body, attachments) VALUES ($1, $2, $3)",
-      [author, body, attachmentsJson]
+    `INSERT INTO messages (chat_id, author, body) VALUES ($1, $2, $3)`,
+    [activeChatId.value, currentUser.value.name, body],
   );
 
-  await loadMessages();
+  await loadMessages(activeChat.value.id);
 }
 
 function selectUser(user: User) {
@@ -133,23 +158,26 @@ onMounted(async()=>{
 <template>
   <main class="app">
     <AppHeader :status="status"/>
-
+    <div class="workspace">
+      <ChatSideBar
+        :chats="chats"
+        :active-chat-id="activeChatId"
+        @select="selectChat"
+      />
     <section class="chat">
-      <div class="chat-info">
-        <div>
-          <h2>First chat</h2>
-          <p>Second local messager</p>
-        </div>
-        <UserSwitcher
-          :users="USERS"
-          :current-user-id="currentUser.id"
-          @select="selectUser"
+      <template v-if="activeChat.value">
+        <chatInfo
+          :title='activeChat.value.title'
+          :subtitle='activeChat.value.subtitle'
         />
-      </div>
-
       <MessageList :messages="messages" :current-user-name="currentUser.name"/>
-      <MessageComposer @send="sendMessage"/>
+      <MessageComposer @send="sendMessage"/>        
+        </template>
+
+
     </section>
+      
+      </div>
 
   </main>
 </template>
@@ -180,7 +208,12 @@ onMounted(async()=>{
 
   background: #111318;
 }
-
+.workspace{
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
 .app{
   display: flex;
   flex-direction: column;

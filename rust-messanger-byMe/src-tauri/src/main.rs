@@ -3,4 +3,7 @@
 
 fn main() {
     rust_messanger_byme_lib::run()
+        .invoke_handler(
+            tauri::generate_handler![save_attachment]
+        )      
 }

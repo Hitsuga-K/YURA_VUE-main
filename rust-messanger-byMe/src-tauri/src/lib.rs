@@ -31,6 +31,8 @@ fn save_attachment(source: String) -> Result<String, String> {
     )
 }
 
+
+
 //// Главная функция для запуска приложения
 pub fn run() {
     // Создание списка миграций

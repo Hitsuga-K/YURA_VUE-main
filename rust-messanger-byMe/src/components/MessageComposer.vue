@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref} from "vue";
 import {open} from "@tauri-apps/plugin-dialog";
-
+import {invoke} from "@tauri-apps/api/core";
 
 
 // defineEmits - сообщает vue, какие из событий, данный
@@ -32,10 +32,21 @@ async function selectImage(){
     filters: [
       {
         name: "Image",
-        extensions: ["jpg", "jpeg", "png", "gif"]
+        extensions: ["jpg", "jpeg", "png", "gif", "webp"]
       }
     ]
   })
+  console.log(file);
+  
+  if(!file){
+    return;
+  }
+
+  const savedPath = await invoke<string>("save_attachment", {
+    source: file
+  });
+
+  console.log(savedPath);
 }
 </script>
 
@@ -98,8 +109,10 @@ async function selectImage(){
 .image-button{
   width: 42px;
   height: 42px;
+  border: 1px solid #343842;
   border-radius: 7px;
-  cursor: pointer;
+  background: #4f7fea;
+  font-size: 20px;
 }
 .image-button:hover{
   background: #4f7fea;

@@ -18,7 +18,8 @@ fn save_attachment(source: String) -> Result<String, String> {
 let path = std::path::Path::new(&source);
 
     let extension = match path.extension() {
-        Some(ext) => ext.to_string_lossy().to_string()
+        Some(ext) => ext.to_string_lossy().to_string(),
+         None => "bin".to_string(),
     };
 
     let timestamp = chrono::Utc::now().timestamp();

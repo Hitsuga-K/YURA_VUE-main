@@ -17,7 +17,7 @@ fn save_attachment(source: String) -> Result<String, String> {
 
     let file_name = format!("image_{}.png", chrono::Utc::now().timestamp());
     
-    let destination = attachment_dir.join(file_name);
+    let destination = attachment_dir.join(&file_name);
     
     // Копируем файл из source в destination
     std::fs::copy(source, &destination)
@@ -54,7 +54,13 @@ pub fn run() {
             description: "create_chats",
             sql: include_str!("../migrations/0002_chats.sql"),
             kind: MigrationKind::Up,
-        }
+        },
+        Migration {
+            version: 3,
+            description: "message_attachments",
+            sql: include_str!("../migrations/003_message_attachments.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     // Создаем сбощик приложения Tauri
@@ -72,6 +78,9 @@ pub fn run() {
         // Создаем plugin opener
         .plugin(tauri_plugin_opener::init())
         // Запускаем приложение
+                .invoke_handler(
+            tauri::generate_handler![save_attachment]
+        )      
         .run(tauri::generate_context!())
         // Если запуск завершился с ошибкой, то сообщем об этом
         .expect("Ошиюка при сборке приложения");

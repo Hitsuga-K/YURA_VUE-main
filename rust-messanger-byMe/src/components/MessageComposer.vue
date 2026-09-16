@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import {ref} from "vue";
+import {open} from "@tauri-apps/plugin-dialog";
+
 
 
 // defineEmits - сообщает vue, какие из событий, данный
@@ -21,6 +23,20 @@ function submitMessage(){
   // После отправки очищаем поле ввода
   draft.value = "";
 }
+
+async function selectImage(){
+  const file = await open({
+
+    multiple: false,
+
+    filters: [
+      {
+        name: "Image",
+        extensions: ["jpg", "jpeg", "png", "gif"]
+      }
+    ]
+  })
+}
 </script>
 
 <template>
@@ -28,6 +44,11 @@ function submitMessage(){
       class="composer"
       @submit.prevent="submitMessage"
   >
+    <button
+      type="button"
+      class="image-button"
+      @click="selectImage"
+    ></button>
     <input
         v-model="draft"
         type="text"
@@ -74,5 +95,13 @@ function submitMessage(){
   font: inherit;
   font-weight: 600;
 }
-
+.image-button{
+  width: 42px;
+  height: 42px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.image-button:hover{
+  background: #4f7fea;
+}
 </style>

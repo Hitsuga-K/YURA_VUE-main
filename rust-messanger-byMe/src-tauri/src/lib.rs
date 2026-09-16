@@ -5,7 +5,33 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 // На Win она не мешает
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 
-// Главная функция для запуска приложения
+#[tauri::command]
+fn save_attachment(source: String) -> Result<String, String> {
+    let app_dir = std::env::current_dir() // Проверка где сейчас  лежит приложение
+        .map_err(|e| e.to_string())?; // map_err функция возможной ошибкой например нет доступа
+    let attachment_dir = app_dir.join("attachment"); // join буквально создат к существующему пути до папки новую папку "attachment"
+    
+    // fs = filesistem - для работы с файлами
+    std::fs::create_dir_all(&attachment_dir)
+        .map_err(|e| e.to_string())?;
+
+    let file_name = format!("image_{}.png", chrono::Utc::now().timestamp());
+    
+    let destination = attachment_dir.join(file_name);
+    
+    // Копируем файл из source в destination
+    std::fs::copy(source, &destination)
+        .map_err(|e| e.to_string())?;
+    
+    Ok(
+        format!(
+            "attachment/{}",
+            file_name
+        )
+    )
+}
+
+//// Главная функция для запуска приложения
 pub fn run() {
     // Создание списка миграций
     let migrations = vec![

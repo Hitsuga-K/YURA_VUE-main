@@ -15,7 +15,9 @@ import MessageList from "./components/MessageList.vue";
 
 import MessageComposer from "./components/MessageComposer.vue";
 
-import ChatSidebar from "../components/ChatSidebar.vue";
+import ChatSidebar from "./components/ChatSidebar.vue";
+
+import ChatInfo from "./components/ChatInfo.vue";
 
 import type { Chat } from "./types/chats";
 
@@ -217,22 +219,6 @@ onMounted(async()=>{
   display: flex;
   flex-direction: column;
   overflow: hidden; /* Потому что chat целиком не должен прокручиваться, только MessageList внутри него */
-}
-
-.chat-info{
-  padding: 20px 24px;
-  border-bottom: 1px solid #252830;
-}
-
-.chat-info h2{
-  margin: 0;
-  font-size: 16px;
-}
-
-.chat-info p{
-  margin: 5px 0 0;
-  color: #858c98;
-  font-size: 13px;
 }
 
 </style>

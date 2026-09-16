@@ -15,7 +15,14 @@ fn save_attachment(source: String) -> Result<String, String> {
     std::fs::create_dir_all(&attachment_dir)
         .map_err(|e| e.to_string())?;
 
-    let file_name = format!("image_{}.png", chrono::Utc::now().timestamp());
+let path = std::path::Path::new(&source);
+
+    let extension = match path.extension() {
+        Some(ext) => ext.to_string_lossy().to_string()
+    };
+
+    let timestamp = chrono::Utc::now().timestamp();
+    let file_name = format!("image_{}.{}", timestamp, extension);
     
     let destination = attachment_dir.join(&file_name);
     
@@ -65,7 +72,6 @@ pub fn run() {
 
     // Создаем сбощик приложения Tauri
     tauri::Builder::default()
-        .plugin(tauri_plugin_sql::Builder::new().build())
         // Подключаем sql плагин
         .plugin(
             // Сборщик плагинов
@@ -76,6 +82,7 @@ pub fn run() {
                 .build(),
         )
         // Создаем plugin opener
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         // Запускаем приложение
                 .invoke_handler(

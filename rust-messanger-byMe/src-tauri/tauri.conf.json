@@ -19,7 +19,16 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/attachments/**/*",
+          "$RESOURCE/**",
+          "C:/Users/User2/RustroverProjects/YURA_VUE-main/rust-messanger-byMe/attachment/**",
+          "C:/Users/User2/RustroverProjects/YURA_VUE-main/rust-messanger-byMe/src-tauri/attachment/**"
+        ]
+      }
     }
   },
   "bundle": {

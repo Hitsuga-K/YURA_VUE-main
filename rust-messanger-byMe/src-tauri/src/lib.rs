@@ -1,44 +1,99 @@
 // Импорт типов, необходимых для migrations
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+use std::path::Path;
+
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH
+};
+
+use tauri::Manager;
 // Аннотация небходимая Tauri для мобильных платформ
 // На Win она не мешает
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 
 #[tauri::command]
-fn save_attachment(source: String) -> Result<String, String> {
-    // Берём папку с Cargo.toml = src-tauri/. Надёжнее current_dir
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::env::current_dir().unwrap());
+fn save_attachment(app: tauri::AppHandle, source: String) -> Result<String, String> {
+//     let app_dir = std::env::current_dir() // Проверка где сейчас  лежит приложение
+//         .map_err(|e| e.to_string())?; // map_err функция возможной ошибкой например нет доступа
+//     let attachment_dir = app_dir.join("attachment"); // join буквально создат к существующему пути до папки новую папку "attachment"
+    
+//     // fs = filesistem - для работы с файлами
+//     std::fs::create_dir_all(&attachment_dir)
+//         .map_err(|e| e.to_string())?;
 
-    // Поднимаемся ВВЕРХ на 1 уровень → rust-messanger-byMe/ (корень фронтенда)
-    let project_root = manifest_dir
-        .parent()
-        .ok_or("Не определить корень проекта".to_string())?;
+// let path = std::path::Path::new(&source);
 
-    // ✅ Папка attachment теперь ВНУТРИ КОРНЯ ПРОЕКТА, но СНАРУЖИ src-tauri/
-    // → cargo watch её не видит → НЕТ РЕБИЛДОВ
-    let attachment_dir = project_root.join("attachment");
+//     let extension = match path.extension() {
+//         Some(ext) => ext.to_string_lossy().to_string(),
+//          None => "bin".to_string(),
+//     };
 
+//     let timestamp = chrono::Utc::now().timestamp();
+//     let file_name = format!("image_{}.{}", timestamp, extension);
+    
+//     let destination = attachment_dir.join(&file_name);
+    
+//     // Копируем файл из source в destination
+//     std::fs::copy(source, &destination)
+//         .map_err(|e| e.to_string())?;
+    
+//     Ok(
+//         format!(
+//             "attachment/{}",
+//             file_name
+//         )
+//     )
+    let source_path = Path::new(&source);
+
+    if !source_path.exists() {
+        return Err("Source file does not exist".to_string());
+    }
+
+    let extension = source_path.
+    extension()
+    .and_then(|extension| extension.to_str())
+    .map(|extension| extension.to_ascii_lowercase())
+    .ok_or_else(|| "Source file extension is empty".to_string())?;
+
+    let allowed_extensions = ["png", "jpg", "jpeg", "gif", "webp"];
+
+    if !allowed_extensions.contains(&extension.as_str()) {
+        return Err("Source file extension is not allowed".to_string());
+    }
+
+    let app_data_dir = 
+    app 
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?;
+
+    let attachment_dir = app_data_dir.join("attachment");
+    
     std::fs::create_dir_all(&attachment_dir)
         .map_err(|e| e.to_string())?;
 
-    let path = std::path::Path::new(&source);
-    let extension = path.extension()
-        .map(|ext| ext.to_string_lossy().to_string())
-        .unwrap_or_else(|| "bin".to_string());
-
-    let timestamp = chrono::Utc::now().timestamp();
+    let timestamp = 
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_nanos();
+    
     let file_name = format!("image_{}.{}", timestamp, extension);
     let destination = attachment_dir.join(&file_name);
 
-    std::fs::copy(source, &destination)
+    std::fs::copy(source_path, &destination)
         .map_err(|e| e.to_string())?;
+    
+    let saved_path = 
+        destination
+            .to_str()
 
-    // ✅ ВОЗВРАЩАЕМ АБСОЛЮТНЫЙ ПУТЬ, а не "attachment/..."
-    // convertFileSrc требует именно абсолютный путь для asset://
-    Ok(destination.to_string_lossy().to_string())
+            .ok_or_else(|| "Destination path is empty".to_string())?
+            .to_string();
+
+        Ok(saved_path)
 }
 
 

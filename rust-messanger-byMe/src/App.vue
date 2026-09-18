@@ -136,7 +136,7 @@ async function sendImage(path: string){
           activeChat.value.id,
           currentUser.value.name,
           "image",
-          null,
+          "",
           path
       ]
   );

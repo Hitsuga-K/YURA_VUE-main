@@ -8,6 +8,7 @@ import {invoke} from "@tauri-apps/api/core";
 // компонент имеет право рассылать
 const emit = defineEmits<{
   send: [body:string];
+  sendImage: [path:string];
 }>();
 
 const draft = ref("");
@@ -47,6 +48,12 @@ async function selectImage(){
   });
 
   console.log(savedPath);
+
+  emit("sendImage", savedPath);
+  
+
+
+
 }
 </script>
 

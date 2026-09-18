@@ -69,6 +69,12 @@ pub fn run() {
             sql: include_str!("../migrations/003_message_attachments.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 4,
+            description: "allow_null_body",
+            sql: include_str!("../migrations/004_allow_null_body.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     // Создаем сбощик приложения Tauri

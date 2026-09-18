@@ -88,7 +88,7 @@ async function loadMessages(chatId: number){
 
   // Читаем данные из таблицы messages
   messages.value = await db.select<Message[]>(
-    "SELECT id, author, body, created_at FROM messages WHERE chat_id = $1 ORDER BY id ASC",
+    "SELECT id, chat_id, author, type, body, attachment, created_at FROM messages WHERE chat_id = $1 ORDER BY id ASC",
       [chatId],
   );
 }
@@ -116,7 +116,32 @@ async function sendMessage(body: string){
   );
   await loadMessages(activeChat.value.id)
 }
+async function sendImage(path: string){
+  if (!db) return;
 
+  if (!activeChat.value) return;
+
+  await db.execute(
+    `
+       INSERT INTO messages (
+            chat_id,
+            author,
+            type,
+            body,
+            attachment
+       )
+       VALUES ($1, $2, $3, $4, $5)
+    `,
+      [
+          activeChat.value.id,
+          currentUser.value.name,
+          "image",
+          null,
+          path
+      ]
+  );
+  await loadMessages(activeChat.value.id)
+}
 // VUE выполнит код ниже, когда интерфейс программы уже загрузится
 onMounted(async()=>{
   try{
@@ -161,12 +186,12 @@ onMounted(async()=>{
               :messages="messages"
               :current-user-name="currentUser.name"
           />
-          <MessageComposer @send="sendMessage" />
+          <MessageComposer @send="sendMessage" @sendImage="sendImage" />
         </template>
       </section>
     </div>
   </main>
-</template>
+</template> 
 
 <style scoped>
 /* Все элементы будут использовать одну модель размеров */

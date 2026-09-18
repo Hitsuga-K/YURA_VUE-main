@@ -2,6 +2,8 @@
 
 import type { Message } from "../types/message.ts";
 
+import { getFileSrc } from "../types/file.ts";
+
 defineProps<{
   message: Message;
   isOwn: boolean;
@@ -16,9 +18,17 @@ defineProps<{
         'message--other': !isOwn,
       }"
   >
-    <p>
+    <p
+        v-if="message.type === 'text'"
+    >
       {{message.body}}
     </p>
+    <img
+        v-if="message.type === 'image'"
+
+        class="message-image"
+        :src="message.attachment?getFileSrc(message.attachment):''"
+    />
     <footer>
             <span>
               {{ message.author}}
@@ -34,7 +44,12 @@ defineProps<{
 </template>
 
 <style scoped>
-
+.message-image{
+  max-width: 300px;
+  max-height: 300px;
+  border: 12px;
+  
+}
 .message{
   max-width: 70%;
   margin: 0;

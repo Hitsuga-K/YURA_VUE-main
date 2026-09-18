@@ -7,36 +7,38 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 #[tauri::command]
 fn save_attachment(source: String) -> Result<String, String> {
-    let app_dir = std::env::current_dir() // Проверка где сейчас  лежит приложение
-        .map_err(|e| e.to_string())?; // map_err функция возможной ошибкой например нет доступа
-    let attachment_dir = app_dir.join("attachment"); // join буквально создат к существующему пути до папки новую папку "attachment"
-    
-    // fs = filesistem - для работы с файлами
+    // Берём папку с Cargo.toml = src-tauri/. Надёжнее current_dir
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::env::current_dir().unwrap());
+
+    // Поднимаемся ВВЕРХ на 1 уровень → rust-messanger-byMe/ (корень фронтенда)
+    let project_root = manifest_dir
+        .parent()
+        .ok_or("Не определить корень проекта".to_string())?;
+
+    // ✅ Папка attachment теперь ВНУТРИ КОРНЯ ПРОЕКТА, но СНАРУЖИ src-tauri/
+    // → cargo watch её не видит → НЕТ РЕБИЛДОВ
+    let attachment_dir = project_root.join("attachment");
+
     std::fs::create_dir_all(&attachment_dir)
         .map_err(|e| e.to_string())?;
 
-let path = std::path::Path::new(&source);
-
-    let extension = match path.extension() {
-        Some(ext) => ext.to_string_lossy().to_string(),
-         None => "bin".to_string(),
-    };
+    let path = std::path::Path::new(&source);
+    let extension = path.extension()
+        .map(|ext| ext.to_string_lossy().to_string())
+        .unwrap_or_else(|| "bin".to_string());
 
     let timestamp = chrono::Utc::now().timestamp();
     let file_name = format!("image_{}.{}", timestamp, extension);
-    
     let destination = attachment_dir.join(&file_name);
-    
-    // Копируем файл из source в destination
+
     std::fs::copy(source, &destination)
         .map_err(|e| e.to_string())?;
-    
-    Ok(
-        format!(
-            "attachment/{}",
-            file_name
-        )
-    )
+
+    // ✅ ВОЗВРАЩАЕМ АБСОЛЮТНЫЙ ПУТЬ, а не "attachment/..."
+    // convertFileSrc требует именно абсолютный путь для asset://
+    Ok(destination.to_string_lossy().to_string())
 }
 
 

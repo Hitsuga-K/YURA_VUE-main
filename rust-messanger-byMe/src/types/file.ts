@@ -1,8 +1,12 @@
-import {convertFileSrc} from "@tauri-apps/api/core";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
-export function getFileSrc(path:string){
-    return convertFileSrc(path);
+export function getFileUrl(
+    path:string
+){
+    return convertFileSrc(
+        path
+    );
 }
 
-// Было: C:/documents/.../attachment/image.png
-// Теперь asset://localhost//.../attachment/image.png
+// Было: С:/documents/encore067-messenger/attachments/image.png
+// Теперь: asset://localhost/encore067-messenger/attachments/image.png

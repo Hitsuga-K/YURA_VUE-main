@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {ref} from "vue";
-import {open} from "@tauri-apps/plugin-dialog";
-import {invoke} from "@tauri-apps/api/core";
 
+import { open } from "@tauri-apps/plugin-dialog";
+
+import { invoke } from "@tauri-apps/api/core";
 
 // defineEmits - сообщает vue, какие из событий, данный
 // компонент имеет право рассылать
@@ -27,32 +28,42 @@ function submitMessage(){
 
 async function selectImage(){
   const file = await open({
-
     multiple: false,
 
-    filters: [
+    filters:[
       {
-        name: "Image",
-        extensions: ["jpg", "jpeg", "png", "gif", "webp"]
+        name:"Image",
+        extensions:[
+            "png",
+            "jpg",
+            "jpeg",
+            "webp",
+            "gif"
+        ]
       }
     ]
-  })
-  console.log(file);
-  
+  });
+
+  console.log(file)
+
   if(!file){
     return;
   }
 
-  const savedPath = await invoke<string>("save_attachment", {
-    source: file
-  });
+  const savedPath =
+      await invoke<string>(
+          "save_attachment",
+          {
+            source:file
+          }
+      );
 
-  console.log(savedPath);
+  // console.log(savedPath)
 
-  emit("sendImage", savedPath);
-  
-
-
+  emit(
+      "sendImage",
+      savedPath
+  )
 
 }
 </script>
@@ -66,7 +77,9 @@ async function selectImage(){
       type="button"
       class="image-button"
       @click="selectImage"
-    ></button>
+    >
+      📎
+    </button>
     <input
         v-model="draft"
         type="text"
@@ -79,6 +92,19 @@ async function selectImage(){
 
 <style scoped>
 
+.image-button{
+  width: 42px;
+  height: 42px;
+  border: 1px solid #343842;
+  border-radius: 8px;
+  background: #20232a;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.image-button:hover{
+  background: #292c34;
+}
 .composer{
   display: flex;
   gap: 10px;
@@ -113,15 +139,5 @@ async function selectImage(){
   font: inherit;
   font-weight: 600;
 }
-.image-button{
-  width: 42px;
-  height: 42px;
-  border: 1px solid #343842;
-  border-radius: 7px;
-  background: #4f7fea;
-  font-size: 20px;
-}
-.image-button:hover{
-  background: #4f7fea;
-}
+
 </style>

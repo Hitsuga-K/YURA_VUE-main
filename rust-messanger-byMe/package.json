@@ -1,5 +1,5 @@
 {
-  "name": "rust-messanger-byme",
+  "name": "encore-67-messanger",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-sql": "^2.4.1",
     "vue": "^3.5.13"
@@ -22,8 +22,5 @@
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
     "vue-tsc": "^2.1.10"
-  },
-  "allowScripts": {
-    "esbuild@0.25.12": true
   }
 }

@@ -17,8 +17,6 @@ import MessageComposer from "./components/MessageComposer.vue";
 
 import ChatSidebar from "./components/ChatSidebar.vue";
 
-import ChatInfo from "./components/ChatInfo.vue";
-
 import type { Chat } from "./types/chats";
 
 import type { Message } from "./types/message.ts";
@@ -116,32 +114,48 @@ async function sendMessage(body: string){
   );
   await loadMessages(activeChat.value.id)
 }
-async function sendImage(path: string){
-  if (!db) return;
 
-  if (!activeChat.value) return;
+async function sendImage(path:string){
+  if(!db)
+    return;
+
+  if (!activeChat.value)
+    return;
 
   await db.execute(
-    `
-       INSERT INTO messages (
-            chat_id,
-            author,
-            type,
-            body,
-            attachment
-       )
-       VALUES ($1, $2, $3, $4, $5)
-    `,
+      `
+        INSERT INTO messages
+        (
+           chat_id,
+           author,
+           type,
+           body,
+           attachment
+        )
+
+        VALUES
+        (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5
+        )
+      `,
       [
           activeChat.value.id,
           currentUser.value.name,
           "image",
           "",
-          path
+          path,
       ]
   );
-  await loadMessages(activeChat.value.id)
+
+  await loadMessages(
+      activeChat.value.id
+  )
 }
+
 // VUE выполнит код ниже, когда интерфейс программы уже загрузится
 onMounted(async()=>{
   try{
@@ -186,12 +200,15 @@ onMounted(async()=>{
               :messages="messages"
               :current-user-name="currentUser.name"
           />
-          <MessageComposer @send="sendMessage" @sendImage="sendImage" />
+          <MessageComposer
+              @send="sendMessage"
+              @sendImage="sendImage"
+          />
         </template>
       </section>
     </div>
   </main>
-</template> 
+</template>
 
 <style scoped>
 /* Все элементы будут использовать одну модель размеров */
@@ -244,6 +261,22 @@ onMounted(async()=>{
   display: flex;
   flex-direction: column;
   overflow: hidden; /* Потому что chat целиком не должен прокручиваться, только MessageList внутри него */
+}
+
+.chat-info{
+  padding: 20px 24px;
+  border-bottom: 1px solid #252830;
+}
+
+.chat-info h2{
+  margin: 0;
+  font-size: 16px;
+}
+
+.chat-info p{
+  margin: 5px 0 0;
+  color: #858c98;
+  font-size: 13px;
 }
 
 </style>

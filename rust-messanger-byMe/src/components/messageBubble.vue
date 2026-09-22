@@ -1,8 +1,8 @@
 <script setup lang="ts">
 
-import type { Message } from "../types/message.ts";
+import { getFileUrl } from "../types/file.ts";
 
-import { getFileSrc } from "../types/file.ts";
+import type { Message } from "../types/message.ts";
 
 defineProps<{
   message: Message;
@@ -19,15 +19,25 @@ defineProps<{
       }"
   >
     <p
-        v-if="message.type === 'text'"
+      v-if="
+        message.type==='text'
+      "
     >
       {{message.body}}
     </p>
-    <img
-        v-if="message.type === 'image'"
 
+    <img
+        v-if="
+          message.type === 'image'
+          &&
+          message.attachment
+        "
         class="message-image"
-        :src="message.attachment?getFileSrc(message.attachment):''"
+        :src="
+          getFileUrl(
+            message.attachment
+          )
+        "
     />
     <footer>
             <span>
@@ -44,12 +54,14 @@ defineProps<{
 </template>
 
 <style scoped>
+
 .message-image{
   max-width: 300px;
   max-height: 300px;
-  border: 12px;
-  
+  border-radius: 12px;
+  object-fit: cover;
 }
+
 .message{
   max-width: 70%;
   margin: 0;

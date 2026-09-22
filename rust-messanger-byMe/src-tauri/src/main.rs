@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    rust_messanger_byme_lib::run()
+    encore_67_messanger_lib::run()
 }

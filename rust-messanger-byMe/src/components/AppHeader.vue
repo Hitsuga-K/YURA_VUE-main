@@ -15,6 +15,7 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [user: User];
+  profile: [];
 }>();
 
 function selectUser(user: User){
@@ -36,6 +37,12 @@ function selectUser(user: User){
           :current-user-id="currentUser.id"
           @select="selectUser"
       />
+      <button
+      type="button"
+      class="profile-open-button"
+      @click="emit('profile')">
+        Profile
+      </button>
     </div>
     <span class="badge">
         Локально

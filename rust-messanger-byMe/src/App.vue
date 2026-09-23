@@ -21,6 +21,52 @@ import type { Chat } from "./types/chats";
 
 import type { Message } from "./types/message.ts";
 
+import ProfileEditor from "./components/ProfileEditor.vue";
+
+import type { ProfileUpdate } from "./types/user";
+
+
+
+const isProfileOpen = ref(false);
+
+function openProfile(){
+  isProfileOpen.value = true;
+}
+
+function closedProfile(){
+  isProfileOpen.value = false;
+}
+
+async function saveProfile(profile: ProfileUpdate) {
+    if (!db) return;
+    if (!currentUser.value) return;
+
+    await db.execute(
+      `
+      UPDATE users
+      SET 
+        display_name = $1,
+        status = $2
+      WHERE id = $3
+      `,
+      [
+        profile.displayName,
+        profile.status,
+        currentUser.value.id
+      ],
+    );
+
+    currentUser.value.display_name = profile.displayName;
+    currentUser.value.status = profile.status;
+
+    if(activeChat.value){
+      await loadMessages(
+        activeChat.value.id
+      );
+    }
+
+}
+
 const users = ref<User[]>([]);
 
 
@@ -217,6 +263,7 @@ onMounted(async()=>{
         :users="users"
         :current-user="currentUser"
         @select="selectUser"
+        @profile="openProfile"
     />
     <div 
       v-if="currentUser"
@@ -244,6 +291,13 @@ onMounted(async()=>{
         </template>
       </section>
     </div>
+    <ProfilerEditor
+      v-if="isProfileOpen && currentUser"
+      :key="currentUser.id"
+      :user="currentUser"
+      @save="saveProfile"
+      @close="closedProfile"
+    />
   </main>
 </template>
 

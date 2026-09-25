@@ -176,12 +176,12 @@ pub fn run() {
             sql: include_str!("../migrations/0003_message_attachments.sql"),
             kind: MigrationKind::Up,
         },
-            Migration {
+        Migration{
             version: 4,
             description: "create_users_and_link_messages",
-            sql: include_str!("../migrations/0005_users.sql"),
+            sql: include_str!("../migrations/0004_users.sql"),
             kind: MigrationKind::Up,
-            }
+        },
     ];
 
     // Создаем сбощик приложения Tauri

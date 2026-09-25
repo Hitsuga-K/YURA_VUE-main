@@ -38,11 +38,10 @@ function selectUser(user: User){
           @select="selectUser"
       />
       <button
-      type="button"
-      class="profile-open-button"
-      @click="emit('profile')">
-        Profile
-      </button>
+        type="button"
+        class="profile-open-button"
+        @click="emit('profile')"
+      > Профиль </button>
     </div>
     <span class="badge">
         Локально

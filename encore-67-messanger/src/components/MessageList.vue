@@ -15,6 +15,10 @@ const props = defineProps<{
   currentUserId: number;
 }>();
 
+const emit = defineEmits<{
+  openImage: [src: string];
+}>();
+
 const bottomAnchor = useTemplateRef<HTMLDivElement>("bottom-anchor");
 
 async function scrollToBottom(){
@@ -57,6 +61,7 @@ onMounted(scrollToBottom);
           :key="message.id"
           :message="message"
           :is-own="message.author_id === currentUserId"
+          @open-image="emit('openImage', $event)"
       />
       <div
         ref="bottom-anchor"

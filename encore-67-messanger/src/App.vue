@@ -2,6 +2,64 @@
 
 import type { User } from "./types/user";
 
+import ProfilerEditor from "./components/ProfilerEditor.vue";
+
+import ImageViewer from "./components/ImageViewer.vue";
+
+import { ProfileUpdate } from "./types/user";
+
+const isProfileOpen = ref(false);
+
+const openImageSrc = ref<string | null>(null);
+
+function openProfile(){
+  isProfileOpen.value = true;
+}
+
+function closeProfile(){
+  isProfileOpen.value = false;
+}
+
+function openImage(src: string){
+  openImageSrc.value = src;
+}
+
+function closeImage(){
+  openImageSrc.value = null;
+}
+
+async function saveProfile(profile:ProfileUpdate,) {
+  if(!db) return;
+
+  if(!currentUser.value) return;
+
+  await db.execute(
+    `
+      UPDATE users
+
+      SET
+        display_name = $1,
+        status = $2
+
+      WHERE id = $3
+    `,
+    [
+      profile.displayName,
+      profile.status,
+      currentUser.value?.id,
+    ],
+  );
+
+  currentUser.value.display_name = profile.displayName;
+  currentUser.value.status = profile.status;
+
+  if(activeChat.value){
+    await loadMessages(
+      activeChat.value.id,
+    )
+  }
+};
+
 // Импорт 2 функций из vue
 // onMounted - запускает код после появления компонента
 // ref -  создает быстрые перемещения
@@ -21,54 +79,7 @@ import type { Chat } from "./types/chats";
 
 import type { Message } from "./types/message.ts";
 
-import ProfileEditor from "./components/ProfileEditor.vue";
-
-import type { ProfileUpdate } from "./types/user";
-
-
-
-const isProfileOpen = ref(false);
-
-function openProfile(){
-  isProfileOpen.value = true;
-}
-
-function closedProfile(){
-  isProfileOpen.value = false;
-}
-
-async function saveProfile(profile: ProfileUpdate) {
-    if (!db) return;
-    if (!currentUser.value) return;
-
-    await db.execute(
-      `
-      UPDATE users
-      SET 
-        display_name = $1,
-        status = $2
-      WHERE id = $3
-      `,
-      [
-        profile.displayName,
-        profile.status,
-        currentUser.value.id
-      ],
-    );
-
-    currentUser.value.display_name = profile.displayName;
-    currentUser.value.status = profile.status;
-
-    if(activeChat.value){
-      await loadMessages(
-        activeChat.value.id
-      );
-    }
-
-}
-
 const users = ref<User[]>([]);
-
 
 const currentUser = ref<User | null>(null);
 
@@ -124,16 +135,16 @@ async function loadMessages(chatId: number){
       SELECT 
         messages.id, 
         messages.chat_id, 
-        messages.author_id,
+        messages.author_id, 
         users.display_name AS author_name,
-        users.display_path AS author_avatar,
+        users.avatar_path AS author_avatar,
         messages.type, 
         messages.body, 
         messages.attachment, 
         messages.created_at 
       FROM messages 
-      INNER JOIN ysers
-      //  Возращает только строки для которых нашёлся соотв. юзер
+      INNER JOIN users
+        -- Возвращает только строки для которых нашёлся соотв. User
         ON users.id = messages.author_id
       WHERE messages.chat_id = $1 
       ORDER BY messages.id ASC
@@ -143,25 +154,25 @@ async function loadMessages(chatId: number){
 }
 
 async function loadUsers() {
-    if(!db)
-    return;
-  users.value = 
+  if(!db) return 
+
+  users.value =
     await db.select<User[]>(
       `
-        SELECT 
+        SELECT
           id,
-          username,display_name,
+          username,
+          display_name,
           avatar_path,
           status,
           created_at
         FROM users
         ORDER BY id ASC
-      `,
+      `
     );
-
-    if(users.value.length > 0 && currentUser.value === null){
-      currentUser.value = users.value[0];
-    }
+  if(users.value.length > 0 && currentUser.value === null){
+    currentUser.value = users.value[0];
+  }
 }
 
 // Функция отправки нового сообщения
@@ -188,7 +199,7 @@ async function sendMessage(body: string){
           currentUser.value.id,
           "text",
           body,
-          null
+          null,
       ],
   );
   await loadMessages(activeChat.value.id)
@@ -197,9 +208,11 @@ async function sendMessage(body: string){
 async function sendImage(path:string){
   if(!db)
     return;
-  if(!currentUser.value) return;
+
   if (!activeChat.value)
     return;
+
+  if (!currentUser.value) return;
 
   await db.execute(
       `
@@ -225,7 +238,7 @@ async function sendImage(path:string){
           activeChat.value.id,
           currentUser.value.id,
           "image",
-          "",
+          "null",
           path,
       ]
   );
@@ -240,6 +253,7 @@ onMounted(async()=>{
   try{
     // Открываем бд
     db = await Database.load("sqlite:messenger.db");
+
     await loadUsers();
     // Загружаем из базы старые сообщения
     await loadChats();
@@ -258,7 +272,7 @@ onMounted(async()=>{
 <template>
   <main class="app">
     <AppHeader
-        v-if = "currentUser"
+        v-if="currentUser"
         :status="status"
         :users="users"
         :current-user="currentUser"
@@ -266,8 +280,8 @@ onMounted(async()=>{
         @profile="openProfile"
     />
     <div 
-      v-if="currentUser"
-      class="workspace">
+        v-if="currentUser"
+        class="workspace">
       <ChatSidebar
           :chats="chats"
           :active-chat-id="activeChatId"
@@ -279,11 +293,12 @@ onMounted(async()=>{
             :title="activeChat.title"
             :subtitle="activeChat.subtitle"
           />
-          <MessageList
-              :key="activeChat.id"
-              :messages="messages"
-              :current-user-id="currentUser.id"
-          />
+      <MessageList
+          :key="activeChat.id"
+          :messages="messages"
+          :current-user-id="currentUser.id"
+          @open-image="openImage"
+      />
           <MessageComposer
               @send="sendMessage"
               @sendImage="sendImage"
@@ -296,7 +311,12 @@ onMounted(async()=>{
       :key="currentUser.id"
       :user="currentUser"
       @save="saveProfile"
-      @close="closedProfile"
+      @close="closeProfile"
+    />
+    <ImageViewer
+      v-if="openImageSrc"
+      :src="openImageSrc"
+      @close="closeImage"
     />
   </main>
 </template>
@@ -371,13 +391,3 @@ onMounted(async()=>{
 }
 
 </style>
-
-
-
-
-
-
-
-
-
-

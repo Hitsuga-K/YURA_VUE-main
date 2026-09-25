@@ -5,7 +5,7 @@ export interface Message{
     chat_id: number;
     author_id: number;
     author_name: string;
-    autor_avatar: string | null;
+    author_avatar: string | null;
     type: "text" | "image";
     body: string | null;
     attachment: string | null;

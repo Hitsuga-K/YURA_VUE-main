@@ -8,6 +8,14 @@ defineProps<{
   message: Message;
   isOwn: boolean;
 }>();
+
+const emit = defineEmits<{
+  openImage: [src: string];
+}>();
+
+function openImage(src: string) {
+  emit("openImage", src);
+}
 </script>
 
 <template>
@@ -38,10 +46,15 @@ defineProps<{
             message.attachment
           )
         "
+        @click="
+          openImage(
+            getFileUrl(message.attachment)
+          )
+        "
     />
     <footer>
             <span>
-              {{ message.author_name}}
+              {{ message.author_name }}
             </span>
       <span>
               |
@@ -91,5 +104,14 @@ defineProps<{
   color: #b5bbc7;
   font-size: 10px;
 }
+.message-image{
+  max-width: 300px;
+  max-height: 300px;
+  border-radius: 12px;
+  object-fit: cover;
+}
 
+.message-image:hover{
+  transform: scale(1.02);
+}
 </style>

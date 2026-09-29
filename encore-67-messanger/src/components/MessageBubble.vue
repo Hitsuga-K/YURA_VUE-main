@@ -9,8 +9,11 @@ defineProps<{
   isOwn: boolean;
 }>();
 
+
+
 const emit = defineEmits<{
   openImage: [src: string];
+  edit: [message: Message];
 }>();
 
 function openImage(src: string) {
@@ -30,6 +33,7 @@ function openImage(src: string) {
       v-if="
         message.type==='text'
       "
+      @click="emit('edit', message)"
     >
       {{message.body}}
     </p>

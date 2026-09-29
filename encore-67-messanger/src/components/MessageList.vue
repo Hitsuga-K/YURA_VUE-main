@@ -17,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   openImage: [src: string];
+  edit: [message: Message];
 }>();
 
 const bottomAnchor = useTemplateRef<HTMLDivElement>("bottom-anchor");
@@ -62,6 +63,7 @@ onMounted(scrollToBottom);
           :message="message"
           :is-own="message.author_id === currentUserId"
           @open-image="emit('openImage', $event)"
+          @edit="emit('edit', $event)"
       />
       <div
         ref="bottom-anchor"

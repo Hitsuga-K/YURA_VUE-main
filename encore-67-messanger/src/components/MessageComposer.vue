@@ -12,7 +12,8 @@ const emit = defineEmits<{
   sendImage: [path:string];
 }>();
 
-const draft = ref("");
+
+const draft = defineModel<string>({ default: "" });
 
 function submitMessage(){
   // Взять введенный пользователем текст и убрать проблемы по краям

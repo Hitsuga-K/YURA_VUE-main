@@ -81,6 +81,10 @@ import type { Message } from "./types/message.ts";
 
 const users = ref<User[]>([]);
 
+const messageText = ref("");
+
+const editingMessageId = ref<number | null>(null);
+
 const currentUser = ref<User | null>(null);
 
 function selectUser(user: User){
@@ -103,6 +107,7 @@ const status = ref("Подключение...")
 
 // Здесь будет подключение к бд (честно), но пока тут null
 let db: Database | null = null;
+
 
 async function loadChats(){
   if (!db) return;
@@ -174,35 +179,65 @@ async function loadUsers() {
     currentUser.value = users.value[0];
   }
 }
+function startEditing(message: Message) {
+  if (message.author_id !== currentUser.value?.id) return;
+
+  editingMessageId.value = message.id;
+  messageText.value = message.body ?? "";
+}
 
 // Функция отправки нового сообщения
-async function sendMessage(body: string){
+async function sendMessage(body: string) {
   if (!db) return;
-
   if (!activeChat.value) return;
+  if (!currentUser.value) return;
 
-  if(!currentUser.value) return;
+  if (editingMessageId.value !== null) {
+    await db.execute(
+      `
+        UPDATE messages
+        SET body = $1
+        WHERE id = $2
+          AND author_id = $3
+          AND chat_id = $4
+      `,
+      [
+        body,
+        editingMessageId.value,
+        currentUser.value.id,
+        activeChat.value.id,
+      ],
+    );
 
+    editingMessageId.value = null;
+
+    await loadMessages(activeChat.value.id);
+
+    return;
+  }
+
+  // Если это новое сообщение
   await db.execute(
     `
-       INSERT INTO messages (
-            chat_id,
-            author_id,
-            type,
-            body,
-            attachment
-       )
-       VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO messages (
+        chat_id,
+        author_id,
+        type,
+        body,
+        attachment
+      )
+      VALUES ($1, $2, $3, $4, $5)
     `,
-      [
-          activeChat.value.id,
-          currentUser.value.id,
-          "text",
-          body,
-          null,
-      ],
+    [
+      activeChat.value.id,
+      currentUser.value.id,
+      "text",
+      body,
+      null,
+    ],
   );
-  await loadMessages(activeChat.value.id)
+
+  await loadMessages(activeChat.value.id);
 }
 
 async function sendImage(path:string){
@@ -298,11 +333,13 @@ onMounted(async()=>{
           :messages="messages"
           :current-user-id="currentUser.id"
           @open-image="openImage"
+          @edit="startEditing"
       />
-          <MessageComposer
-              @send="sendMessage"
-              @sendImage="sendImage"
-          />
+      <MessageComposer
+          v-model="messageText"
+          @send="sendMessage"
+          @sendImage="sendImage"
+      />
         </template>
       </section>
     </div>

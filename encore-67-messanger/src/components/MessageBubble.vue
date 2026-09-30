@@ -14,6 +14,7 @@ defineProps<{
 const emit = defineEmits<{
   openImage: [src: string];
   edit: [message: Message];
+  delete: [message: Message]; 
 }>();
 
 function openImage(src: string) {
@@ -37,7 +38,18 @@ function openImage(src: string) {
     >
       {{message.body}}
     </p>
-
+    <button
+      v-if="isOwn"
+      @click="emit('delete', message)"
+    >
+      D
+    </button>
+    <button
+      v-if="isOwn"
+      @click="emit('edit', message)"
+    >
+      R
+    </button>
     <img
         v-if="
           message.type === 'image'

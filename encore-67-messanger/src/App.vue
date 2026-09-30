@@ -198,8 +198,6 @@ async function sendMessage(body: string) {
         UPDATE messages
         SET body = $1
         WHERE id = $2
-          AND author_id = $3
-          AND chat_id = $4
       `,
       [
         body,
@@ -240,9 +238,27 @@ async function sendMessage(body: string) {
   await loadMessages(activeChat.value.id);
 }
 
+async function deleteMessage(message: Message) {
+  if (!db) return;
+  if (!activeChat.value) return;
+  if (!currentUser.value) return;
+
+  await db.execute(
+    `
+      DELETE FROM messages
+      WHERE id = $1
+    `,
+    [
+      message.id
+    ],
+  );
+
+  await loadMessages(activeChat.value.id);
+}
+
 async function sendImage(path:string){
   if(!db)
-    return;
+    return;                 
 
   if (!activeChat.value)
     return;
@@ -334,6 +350,7 @@ onMounted(async()=>{
           :current-user-id="currentUser.id"
           @open-image="openImage"
           @edit="startEditing"
+          @delete="deleteMessage"
       />
       <MessageComposer
           v-model="messageText"

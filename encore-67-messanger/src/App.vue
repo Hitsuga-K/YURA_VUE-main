@@ -87,8 +87,25 @@ const editingMessageId = ref<number | null>(null);
 
 const currentUser = ref<User | null>(null);
 
-function selectUser(user: User){
+async function selectUser(user: User) {
   currentUser.value = user;
+
+  const savedChatId = userActiveChats.value[user.id];
+
+  if (savedChatId !== undefined) {
+    const chat = chats.value.find(
+      chat => chat.id === savedChatId
+    );
+
+    if (chat) {
+      await selectChat(chat);
+      return;
+    }
+  }
+
+  if (chats.value.length > 0) {
+    await selectChat(chats.value[0]);
+  }
 }
 
 // Создаем структуру одного сообщения
@@ -98,10 +115,16 @@ const messages = ref<Message[]>([]);
 
 const chats = ref<Chat[]>([]);
 
+const unreadCounts = ref<Record<number, number>>({});
+
+const lastReadMessageId = ref<Record<number, number>>({});
+
 const activeChat = ref<Chat | null>(null);
+
 
 const activeChatId = ref(1);
 
+const userActiveChats = ref<Record<number, number>>({});
 // Статус подключения к бд
 const status = ref("Подключение...")
 
@@ -121,12 +144,52 @@ async function loadChats(){
   }
 }
 
-async function selectChat(chat: Chat){
+async function selectChat(chat: Chat) {
+
   activeChat.value = chat;
 
   activeChatId.value = chat.id;
 
+  if (currentUser.value) {
+    userActiveChats.value[currentUser.value.id] = chat.id;
+  }
+
   await loadMessages(chat.id);
+
+  if (messages.value.length > 0) {
+    const lastMessage =
+      messages.value[messages.value.length - 1];
+
+    lastReadMessageId.value[chat.id] = lastMessage.id;
+  }
+
+  unreadCounts.value[chat.id] = 0;
+}
+
+async function updateUnreadCounts() {
+  if (!db) return;
+  if (!currentUser.value) return;
+
+  for (const chat of chats.value) {
+    if (chat.id === activeChat.value?.id) {
+      unreadCounts.value[chat.id] = 0;
+      continue;
+    }
+
+    const lastReadId = lastReadMessageId.value[chat.id] ?? 0;
+
+    const result = await db.select<{ count: number }[]>(
+      `
+        SELECT COUNT(*) AS count
+        FROM messages
+        WHERE chat_id = $1
+          AND id > $2
+      `,
+      [chat.id, lastReadId],
+    );
+
+    unreadCounts.value[chat.id] = result[0]?.count ?? 0;
+  }
 }
 
 // Асинхронная функция загрузки сообщений из sql
@@ -336,14 +399,11 @@ onMounted(async()=>{
       <ChatSidebar
           :chats="chats"
           :active-chat-id="activeChatId"
+          :unread-counts="unreadCounts"
           @select="selectChat"
       />
       <section class="chat">
         <template v-if="activeChat">
-          <ChatInfo
-            :title="activeChat.title"
-            :subtitle="activeChat.subtitle"
-          />
       <MessageList
           :key="activeChat.id"
           :messages="messages"

@@ -5,6 +5,7 @@ defineProps<{
   chats: Chat[];
 
   activeChatId: number;
+  unreadCounts: Record<number, number>;
 }>();
 
 const emit = defineEmits<{
@@ -30,13 +31,22 @@ function selectChat(chat: Chat){
       class="chat-button"
       :class="{
         'chat-button--active':
-        chat.id === activeChatId
+          chat.id === activeChatId
       }"
       @click="selectChat(chat)"
     >
-      <strong class="chat-button__title">
-        {{ chat.title }}
-      </strong>
+      <div class="chat-button__title-row">
+        <strong class="chat-button__title">
+          {{ chat.title }}
+        </strong>
+
+        <span
+          v-if="unreadCounts[chat.id] > 0"
+          class="unread-badge"
+        >
+          {{ unreadCounts[chat.id] }}
+        </span>
+      </div>
 
       <span class="chat-button__subtitle">
         {{ chat.subtitle }}
@@ -47,6 +57,33 @@ function selectChat(chat: Chat){
 </template>
 
 <style scoped>
+.chat-button__title-row{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.unread-badge{
+  min-width: 20px;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 6px;
+
+  border-radius: 999px;
+
+  background: #f01729;
+  color: white;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .sidebar{
   width: 260px;
   flex-shrink: 0;

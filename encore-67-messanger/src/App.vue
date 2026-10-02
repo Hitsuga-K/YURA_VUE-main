@@ -371,7 +371,11 @@ onMounted(async()=>{
     await loadUsers();
     // Загружаем из базы старые сообщения
     await loadChats();
+    await updateUnreadCounts();
 
+    setInterval(() => {
+      updateUnreadCounts();
+    }, 1000);
     // Показываем успешеное состоние
     status.value = "История сохраняется локально";
   }catch (error){

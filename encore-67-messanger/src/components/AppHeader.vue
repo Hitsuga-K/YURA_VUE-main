@@ -14,10 +14,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [user: User];
   profile: [];
+  createChat: [peer: User];
 }>();
 
 function selectUser(user: User){
   emit("select", user);
+}
+
+function onCreateChat(peer: User) {
+  emit("createChat", peer);
 }
 
 const currentUserAvatar = computed(() => {
@@ -49,6 +54,7 @@ const currentUserInitials = computed(() => {
           :users="users"
           :current-user-id="currentUser.id"
           @select="selectUser"
+          @create-chat="onCreateChat"
       />
       <button
         type="button"

@@ -48,7 +48,6 @@ onMounted(scrollToBottom);
 
 <template>
   <div class="messages">
-    <!-- Данный див будет отображаться когда сообщений нет -->
     <div class="messages-inner">
       <div
           v-if="messages.length === 0"
@@ -57,7 +56,6 @@ onMounted(scrollToBottom);
         <strong> Здесь пока пусто </strong>
         <span> Напишите первое сообщение </span>
       </div>
-      <!-- Vue создает article для каждого сообщения из базы -->
       <MessageBubble
           v-for="message in messages"
           :key="message.id"

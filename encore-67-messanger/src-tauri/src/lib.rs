@@ -182,6 +182,12 @@ pub fn run() {
             sql: include_str!("../migrations/0004_users.sql"),
             kind: MigrationKind::Up,
         },
+        Migration{
+            version: 5,
+            description: "chat_users_members",
+            sql: include_str!("../migrations/0005_chat_users.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     // Создаем сбощик приложения Tauri

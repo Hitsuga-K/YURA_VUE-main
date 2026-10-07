@@ -97,6 +97,8 @@ const currentUser = ref<User | null>(null);
 async function selectUser(user: User) {
   currentUser.value = user;
 
+  await loadChats();
+
   const savedChatId = userActiveChats.value[user.id];
 
   if (savedChatId !== undefined) {
@@ -141,13 +143,88 @@ let db: Database | null = null;
 
 async function loadChats(){
   if (!db) return;
+  if (!currentUser.value) return;
 
   chats.value = await db.select<Chat[]>(
-    "SELECT id, title, subtitle FROM chats ORDER BY id ASC",
+    `
+      SELECT
+        chats.id,
+        chats.title,
+        chats.subtitle
+      FROM chats
+      INNER JOIN chat_users
+        ON chat_users.chat_id = chats.id
+      WHERE chat_users.user_id = $1
+      ORDER BY chats.id ASC
+    `,
+    [currentUser.value.id],
   );
 
   if (chats.value.length > 0){
     await selectChat(chats.value[0]);
+  }
+}
+
+async function createChatWith(peer: User) {
+  if (!db) return;
+  if (!currentUser.value) return;
+  if (peer.id === currentUser.value.id) return;
+
+  const existing = await db.select<{ chat_id: number }[]>(
+    `
+      SELECT cu1.chat_id
+      FROM chat_users cu1
+      INNER JOIN chat_users cu2
+        ON cu2.chat_id = cu1.chat_id
+      WHERE cu1.user_id = $1
+        AND cu2.user_id = $2
+        AND (
+          SELECT COUNT(*)
+          FROM chat_users cu3
+          WHERE cu3.chat_id = cu1.chat_id
+        ) = 2
+      LIMIT 1
+    `,
+    [currentUser.value.id, peer.id],
+  );
+
+  if (existing.length > 0) {
+    const chat = chats.value.find(c => c.id === existing[0].chat_id);
+    if (chat) {
+      await selectChat(chat);
+      return;
+    }
+  }
+
+  const title = `${currentUser.value.display_name} и ${peer.display_name}`;
+  const subtitle = `Личный чат`;
+
+  const result = await db.execute(
+    `
+      INSERT INTO chats (title, subtitle)
+      VALUES ($1, $2)
+    `,
+    [title, subtitle],
+  );
+
+  const chatId =
+    typeof result.lastInsertId === "number"
+      ? result.lastInsertId
+      : Number(result.lastInsertId);
+
+  await db.execute(
+    `
+      INSERT INTO chat_users (chat_id, user_id)
+      VALUES ($1, $2), ($1, $3)
+    `,
+    [chatId, currentUser.value.id, peer.id],
+  );
+
+  await loadChats();
+
+  const newChat = chats.value.find(c => c.id === chatId);
+  if (newChat) {
+    await selectChat(newChat);
   }
 }
 
@@ -403,6 +480,7 @@ onMounted(async()=>{
         :current-user="currentUser"
         @select="selectUser"
         @profile="openProfile"
+        @create-chat="createChatWith"
     />
     <div 
         v-if="currentUser"

@@ -11,10 +11,15 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [user: User];
+  createChat: [peer: User];
 }>();
 
 function selectUser(user: User){
   emit("select", user);
+}
+
+function onCreateChat(user: User) {
+  emit("createChat", user);
 }
 
 function getUserAvatarUrl(user: User) {
@@ -38,33 +43,46 @@ function getUserInitials(user: User) {
     <span class="user-switcher__label">
       Пишет:
     </span>
-    <button
+    <div
       v-for="user in users"
       :key="user.id"
-      type="button"
-      class="user-switcher__button"
-
-      :class="{
-        'user-switcher__button--active':
-        user.id === currentUserId
-      }"
-
-      @click="selectUser(user)"
+      class="user-switcher__item"
     >
-      <div class="user-switcher__avatar">
-        <img
-          v-if="getUserAvatarUrl(user)"
-          :src="getUserAvatarUrl(user)"
-          :alt="user.display_name"
-        />
-        <span v-else class="user-switcher__initials">
-          {{ getUserInitials(user) }}
+      <button
+        type="button"
+        class="user-switcher__button"
+
+        :class="{
+          'user-switcher__button--active':
+          user.id === currentUserId
+        }"
+
+        @click="selectUser(user)"
+      >
+        <div class="user-switcher__avatar">
+          <img
+            v-if="getUserAvatarUrl(user)"
+            :src="getUserAvatarUrl(user)"
+            :alt="user.display_name"
+          />
+          <span v-else class="user-switcher__initials">
+            {{ getUserInitials(user) }}
+          </span>
+        </div>
+        <span class="user-switcher__name">
+          {{ user.display_name }}
         </span>
-      </div>
-      <span class="user-switcher__name">
-        {{ user.display_name }}
-      </span>
-    </button>
+      </button>
+      <button
+        v-if="user.id !== currentUserId"
+        type="button"
+        class="user-switcher__create"
+        :title="`Создать чат с ${user.display_name}`"
+        @click="onCreateChat(user)"
+      >
+        +
+      </button>
+    </div>
   </div>
 </template>
 
@@ -79,6 +97,12 @@ function getUserInitials(user: User) {
 .user-switcher__label{
   color: #8f96a3;
   font-size: 12px;
+}
+
+.user-switcher__item{
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .user-switcher__button{
@@ -148,5 +172,34 @@ function getUserInitials(user: User) {
 
 .user-switcher__button--active .user-switcher__initials{
   color: #e0e4ec;
+}
+
+.user-switcher__create{
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #343842;
+  border-radius: 50%;
+  background: #20232a;
+  color: #afb5c0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.user-switcher__create:hover{
+  background: #1f3a7d;
+  border-color: #386be0;
+  color: #ffffff;
+}
+
+.user-switcher__create:active{
+  background: #1a326b;
 }
 </style>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-
+import { computed } from "vue";
 import { getFileUrl } from "../types/file.ts";
 
 import type { Message } from "../types/message.ts";
 
-defineProps<{
+const props = defineProps<{
   message: Message;
   isOwn: boolean;
 }>();
@@ -16,74 +16,153 @@ const emit = defineEmits<{
   delete: [message: Message];
 }>();
 
+const authorAvatarUrl = computed(() => {
+  if (props.message.author_avatar) {
+    return getFileUrl(props.message.author_avatar);
+  }
+  return null;
+});
+
+const authorInitials = computed(() => {
+  const name = props.message.author_name?.trim() || "?";
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+});
+
 function openImage(src: string) {
   emit("openImage", src);
 }
 </script>
 
 <template>
-  <article
-    class="message"
+  <div
+    class="message-row"
     :class="{
-      'message--own': isOwn,
-      'message--other': !isOwn,
+      'message-row--own': isOwn,
+      'message-row--other': !isOwn,
     }"
   >
-    <!-- Текст сообщения -->
-    <p v-if="message.type === 'text'">
-      {{ message.body }}
-    </p>
-
-    <!-- Изображение -->
-    <img
-      v-if="message.type === 'image' && message.attachment"
-      class="message-image"
-      :src="getFileUrl(message.attachment)"
-      alt="Изображение"
-      @click="openImage(getFileUrl(message.attachment))"
-    />
-
-    <!-- Нижняя информация -->
-    <footer>
-      <span class="message-author">
-        {{ message.author_name }}
+    <div
+      v-if="!isOwn"
+      class="message-avatar"
+    >
+      <img
+        v-if="authorAvatarUrl"
+        :src="authorAvatarUrl"
+        :alt="message.author_name"
+      />
+      <span v-else class="message-avatar__initials">
+        {{ authorInitials }}
       </span>
+    </div>
 
-      <span class="message-separator">
-        |
-      </span>
+    <article
+      class="message"
+      :class="{
+        'message--own': isOwn,
+        'message--other': !isOwn,
+      }"
+    >
+      <!-- Текст сообщения -->
+      <p v-if="message.type === 'text'">
+        {{ message.body }}
+      </p>
 
-      <span class="message-date">
-        {{ message.created_at }}
-      </span>
+      <!-- Изображение -->
+      <img
+        v-if="message.type === 'image' && message.attachment"
+        class="message-image"
+        :src="getFileUrl(message.attachment)"
+        alt="Изображение"
+        @click="openImage(getFileUrl(message.attachment))"
+      />
 
-      <!-- Кнопки только для своих сообщений -->
-      <template v-if="isOwn">
-        <button
-          type="button"
-          class="message-action message-action--edit"
-          title="Редактировать сообщение"
-          aria-label="Редактировать сообщение"
-          @click="emit('edit', message)"
-        >
-          ✎
-        </button>
+      <!-- Нижняя информация -->
+      <footer>
+        <span class="message-author">
+          {{ message.author_name }}
+        </span>
 
-        <button
-          type="button"
-          class="message-action message-action--delete"
-          title="Удалить сообщение"
-          aria-label="Удалить сообщение"
-          @click="emit('delete', message)"
-        >
-          🗑
-        </button>
-      </template>
-    </footer>
-  </article>
+        <span class="message-separator">
+          |
+        </span>
+
+        <span class="message-date">
+          {{ message.created_at }}
+        </span>
+
+        <!-- Кнопки только для своих сообщений -->
+        <template v-if="isOwn">
+          <button
+            type="button"
+            class="message-action message-action--edit"
+            title="Редактировать сообщение"
+            aria-label="Редактировать сообщение"
+            @click="emit('edit', message)"
+          >
+            ✎
+          </button>
+
+          <button
+            type="button"
+            class="message-action message-action--delete"
+            title="Удалить сообщение"
+            aria-label="Удалить сообщение"
+            @click="emit('delete', message)"
+          >
+            🗑
+          </button>
+        </template>
+      </footer>
+    </article>
+  </div>
 </template>
 
 <style scoped>
+.message-row{
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.message-row--own{
+  justify-content: flex-end;
+}
+
+.message-row--other{
+  justify-content: flex-start;
+}
+
+.message-avatar{
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid #292c34;
+  background: #252830;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.message-avatar__initials{
+  font-size: 13px;
+  font-weight: 700;
+  color: #8f96a3;
+  user-select: none;
+}
+
 .message {
   max-width: 70%;
   margin: 0;

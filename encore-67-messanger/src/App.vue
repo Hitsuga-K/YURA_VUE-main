@@ -39,19 +39,26 @@ async function saveProfile(profile:ProfileUpdate,) {
 
       SET
         display_name = $1,
-        status = $2
+        status = $2,
+        avatar_path = $3
 
-      WHERE id = $3
+      WHERE id = $4
     `,
     [
       profile.displayName,
       profile.status,
+      profile.avatarPath,
       currentUser.value?.id,
     ],
   );
 
   currentUser.value.display_name = profile.displayName;
   currentUser.value.status = profile.status;
+  currentUser.value.avatar_path = profile.avatarPath;
+
+  users.value = users.value.map(u =>
+    u.id === currentUser.value?.id ? { ...currentUser.value } : u
+  );
 
   if(activeChat.value){
     await loadMessages(

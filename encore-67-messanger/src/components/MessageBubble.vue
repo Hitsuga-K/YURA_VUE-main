@@ -141,8 +141,8 @@ function openImage(src: string) {
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  border: 1px solid #292c34;
-  background: #252830;
+  border: 1px solid var(--msg-avatar-border, #292c34);
+  background: var(--msg-avatar-bg, #252830);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -159,7 +159,7 @@ function openImage(src: string) {
 .message-avatar__initials{
   font-size: 13px;
   font-weight: 700;
-  color: #8f96a3;
+  color: var(--msg-avatar-initials, #8f96a3);
   user-select: none;
 }
 
@@ -168,39 +168,64 @@ function openImage(src: string) {
   margin: 0;
   padding: 10px 12px;
   border-radius: 10px;
+  background-size: 100% 100%;
 }
 
-.message--own {
-  align-self: flex-end;
-  background: #386be0;
-}
-
-.message--other {
-  align-self: flex-start;
-  background: #252830;
-}
-
-/* Текст сообщения */
 .message p {
   margin: 0;
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
-/* Нижняя часть сообщения */
+.message--own {
+  align-self: flex-end;
+  background: var(--msg-own-bg, #386be0);
+  color: var(--msg-own-fg, #ffffff);
+}
+
+.message--own p {
+  color: var(--msg-own-fg, #ffffff);
+}
+
+.message--other {
+  align-self: flex-start;
+  background: var(--msg-other-bg, #252830);
+  color: var(--msg-other-fg, #f2f3f5);
+}
+
+.message--other p {
+  color: var(--msg-other-fg, #f2f3f5);
+}
+
 .message footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 5px;
   margin-top: 6px;
-
-  color: #b5bbc7;
+  color: var(--msg-meta, #b5bbc7);
   font-size: 10px;
+}
+
+.message--own footer {
+  color: var(--msg-own-meta, rgba(255, 255, 255, 0.8));
+}
+
+.message--other footer {
+  color: var(--msg-other-meta, #b5bbc7);
 }
 
 .message-author {
   white-space: nowrap;
+  color: var(--msg-author, #858c98);
+}
+
+.message--own .message-author {
+  color: var(--msg-own-author, rgba(255, 255, 255, 0.9));
+}
+
+.message--other .message-author {
+  color: var(--msg-other-author, #858c98);
 }
 
 .message-separator {
@@ -211,7 +236,6 @@ function openImage(src: string) {
   white-space: nowrap;
 }
 
-/* Кнопки редактирования и удаления */
 .message-action {
   width: 26px;
   height: 26px;
@@ -226,7 +250,7 @@ function openImage(src: string) {
   border-radius: 7px;
 
   background: transparent;
-  color: #aeb5c2;
+  color: var(--msg-meta, #aeb5c2);
 
   cursor: pointer;
 
@@ -248,27 +272,23 @@ function openImage(src: string) {
   transform: scale(0.94);
 }
 
-/* Редактирование */
 .message-action--edit:hover {
-  background: rgba(56, 107, 224, 0.18);
+  background: var(--primary, rgba(56, 107, 224, 0.18));
   border-color: rgba(56, 107, 224, 0.4);
-  color: #78a0ff;
+  color: var(--primary, #78a0ff);
 }
 
-/* Удаление */
 .message-action--delete:hover {
-  background: rgba(240, 23, 41, 0.15);
+  background: var(--danger, rgba(240, 23, 41, 0.15));
   border-color: rgba(240, 23, 41, 0.35);
-  color: #ff5c6c;
+  color: var(--danger, #ff5c6c);
 }
 
-/* Фокус с клавиатуры */
 .message-action:focus-visible {
-  outline: 2px solid #6f94ee;
+  outline: 2px solid var(--primary, #6f94ee);
   outline-offset: 2px;
 }
 
-/* Изображение */
 .message-image {
   display: block;
 

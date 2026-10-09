@@ -1,14 +1,28 @@
 <script setup lang="ts">
 
+import { onMounted, ref, computed } from "vue";
+
 import type { User } from "./types/user";
-
-import ProfilerEditor from "./components/ProfilerEditor.vue";
-
-import ImageViewer from "./components/ImageViewer.vue";
-
 import { ProfileUpdate } from "./types/user";
 
+import Database from "@tauri-apps/plugin-sql";
+
+import AppHeader from "./components/AppHeader.vue";
+import MessageList from "./components/MessageList.vue";
+import MessageComposer from "./components/MessageComposer.vue";
+import ChatSidebar from "./components/ChatSidebar.vue";
+import ChatSettings from "./components/ChatSettings.vue";
+import ProfilerEditor from "./components/ProfilerEditor.vue";
+import CreateUser from "./components/CreateUser.vue";
+import type { NewUserData } from "./components/CreateUser.vue";
+import ImageViewer from "./components/ImageViewer.vue";
+
+import type { Chat, ChatSettingsUpdate } from "./types/chats";
+import type { Message } from "./types/message.ts";
+import { getFileUrl } from "./types/file.ts";
+
 const isProfileOpen = ref(false);
+const isCreateUserOpen = ref(false);
 
 const openImageSrc = ref<string | null>(null);
 
@@ -18,6 +32,67 @@ function openProfile(){
 
 function closeProfile(){
   isProfileOpen.value = false;
+}
+
+function openCreateUser(){
+  isCreateUserOpen.value = true;
+}
+
+function closeCreateUser(){
+  isCreateUserOpen.value = false;
+}
+
+async function createUser(data: NewUserData) {
+  if (!db) return;
+
+  const existing = await db.select<{ exists: number }[]>(
+    `SELECT 1 AS exists FROM users WHERE username = $1 LIMIT 1`,
+    [data.username],
+  );
+
+  if (existing.length > 0) {
+    alert(`Username "${data.username}" уже занят`);
+    return;
+  }
+
+  const result = await db.execute(
+    `
+      INSERT INTO users (username, display_name, status, avatar_path)
+      VALUES ($1, $2, $3, $4)
+    `,
+    [
+      data.username,
+      data.displayName,
+      data.status,
+      data.avatarPath,
+    ],
+  );
+
+  const newUserId =
+    typeof result.lastInsertId === "number"
+      ? result.lastInsertId
+      : Number(result.lastInsertId);
+
+  await db.execute(
+    `
+      INSERT INTO chat_users (chat_id, user_id)
+      SELECT chats.id, $1
+      FROM chats
+      WHERE chats.id IN (1, 2, 3)
+      ON CONFLICT DO NOTHING
+    `,
+    [newUserId],
+  );
+
+  closeCreateUser();
+
+  await loadUsers();
+  await loadChatWallpapers();
+
+  const newUser = users.value.find(u => u.id === newUserId);
+  if (newUser) {
+    await selectUser(newUser);
+  }
 }
 
 function openImage(src: string){
@@ -67,25 +142,6 @@ async function saveProfile(profile:ProfileUpdate,) {
   }
 };
 
-// Импорт 2 функций из vue
-// onMounted - запускает код после появления компонента
-// ref -  создает быстрые перемещения
-import { onMounted, ref } from "vue";
-
-import Database from "@tauri-apps/plugin-sql";
-
-import AppHeader from "./components/AppHeader.vue";
-
-import MessageList from "./components/MessageList.vue";
-
-import MessageComposer from "./components/MessageComposer.vue";
-
-import ChatSidebar from "./components/ChatSidebar.vue";
-
-import type { Chat } from "./types/chats";
-
-import type { Message } from "./types/message.ts";
-
 const users = ref<User[]>([]);
 
 const messageText = ref("");
@@ -98,6 +154,7 @@ async function selectUser(user: User) {
   currentUser.value = user;
 
   await loadChats();
+  await loadChatWallpapers();
 
   const savedChatId = userActiveChats.value[user.id];
 
@@ -134,6 +191,31 @@ const activeChat = ref<Chat | null>(null);
 const activeChatId = ref(1);
 
 const userActiveChats = ref<Record<number, number>>({});
+
+const chatWallpapers = ref<Record<number, string | null>>({});
+
+const isChatSettingsOpen = ref(false);
+
+const settingsChat = ref<Chat | null>(null);
+
+const currentChatWallpaper = computed<string | null>(() => {
+  if (!activeChat.value) return null;
+  const path = chatWallpapers.value[activeChat.value.id];
+  if (!path) return null;
+  return getFileUrl(path);
+});
+
+const chatStyle = computed<Record<string, string> | undefined>(() => {
+  if (currentChatWallpaper.value) {
+    return {
+      backgroundImage: `url(${currentChatWallpaper.value})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center center",
+      backgroundRepeat: "no-repeat",
+    };
+  }
+  return undefined;
+});
 // Статус подключения к бд
 const status = ref("Подключение...")
 
@@ -248,6 +330,55 @@ async function selectChat(chat: Chat) {
   }
 
   unreadCounts.value[chat.id] = 0;
+}
+
+async function loadChatWallpapers() {
+  if (!db) return;
+  if (!currentUser.value) return;
+
+  chatWallpapers.value = {};
+
+  const rows = await db.select<{ chat_id: number; wallpaper_path: string | null }[]>(
+    `
+      SELECT chat_id, wallpaper_path
+      FROM chat_settings
+      WHERE user_id = $1
+    `,
+    [currentUser.value.id],
+  );
+
+  for (const row of rows) {
+    chatWallpapers.value[row.chat_id] = row.wallpaper_path;
+  }
+}
+
+async function saveChatSettings(settings: ChatSettingsUpdate) {
+  if (!db) return;
+  if (!currentUser.value) return;
+
+  await db.execute(
+    `
+      INSERT INTO chat_settings (user_id, chat_id, wallpaper_path)
+      VALUES ($1, $2, $3)
+      ON CONFLICT(user_id, chat_id)
+      DO UPDATE SET wallpaper_path = excluded.wallpaper_path
+    `,
+    [currentUser.value.id, settings.chatId, settings.wallpaperPath],
+  );
+
+  chatWallpapers.value[settings.chatId] = settings.wallpaperPath;
+
+  closeChatSettings();
+}
+
+function openChatSettings(chat: Chat) {
+  settingsChat.value = chat;
+  isChatSettingsOpen.value = true;
+}
+
+function closeChatSettings() {
+  isChatSettingsOpen.value = false;
+  settingsChat.value = null;
 }
 
 async function updateUnreadCounts() {
@@ -455,6 +586,7 @@ onMounted(async()=>{
     await loadUsers();
     // Загружаем из базы старые сообщения
     await loadChats();
+    await loadChatWallpapers();
     await updateUnreadCounts();
 
     setInterval(() => {
@@ -481,6 +613,8 @@ onMounted(async()=>{
         @select="selectUser"
         @profile="openProfile"
         @create-chat="createChatWith"
+        @open-create-user="openCreateUser"
+
     />
     <div 
         v-if="currentUser"
@@ -490,8 +624,13 @@ onMounted(async()=>{
           :active-chat-id="activeChatId"
           :unread-counts="unreadCounts"
           @select="selectChat"
+          @open-settings="openChatSettings"
       />
-      <section class="chat">
+      <section
+        class="chat"
+        :class="{ 'chat--with-wallpaper': !!currentChatWallpaper }"
+        :style="chatStyle"
+      >
         <template v-if="activeChat">
       <MessageList
           :key="activeChat.id"
@@ -515,6 +654,19 @@ onMounted(async()=>{
       :user="currentUser"
       @save="saveProfile"
       @close="closeProfile"
+    />
+    <CreateUser
+      v-if="isCreateUserOpen"
+      @save="createUser"
+      @close="closeCreateUser"
+    />
+    <ChatSettings
+      v-if="isChatSettingsOpen && settingsChat"
+      :key="settingsChat.id"
+      :chat="settingsChat"
+      :current-wallpaper-path="chatWallpapers[settingsChat.id] ?? null"
+      @save="saveChatSettings"
+      @close="closeChatSettings"
     />
     <ImageViewer
       v-if="openImageSrc"
@@ -562,19 +714,32 @@ onMounted(async()=>{
   height: 100vh;
   display: flex;
   flex-direction: column;
-  /*
-      Запретит всему app прокручиваться
-      Разрешим прокрутку только для MessageList
-  */
   overflow: hidden;
+  background: #111318;
 }
 
 .chat{
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Потому что chat целиком не должен прокручиваться, только MessageList внутри него */
+  overflow: hidden;
+  background: #111318;
+}
+
+.chat--with-wallpaper::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 19, 24, 0.62);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.chat > *{
+  position: relative;
+  z-index: 1;
 }
 
 .chat-info{
@@ -592,5 +757,4 @@ onMounted(async()=>{
   color: #858c98;
   font-size: 13px;
 }
-
 </style>

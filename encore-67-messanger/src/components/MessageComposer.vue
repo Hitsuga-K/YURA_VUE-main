@@ -96,22 +96,25 @@ async function selectImage(){
 .image-button{
   width: 42px;
   height: 42px;
-  border: 1px solid #343842;
+  border: 1px solid var(--image-btn-border, #343842);
   border-radius: 8px;
-  background: #20232a;
+  background: var(--image-btn-bg, #20232a);
+  background-size: 100% 100%;
   cursor: pointer;
   font-size: 18px;
+  transition: background 0.12s ease;
 }
 
 .image-button:hover{
-  background: #292c34;
+  background: var(--image-btn-bg-hover, #292c34);
 }
 .composer{
   display: flex;
   gap: 10px;
   padding: 15px 20px;
-  border-top: 1px solid #252830;
-  background: #17191f;
+  border-top: 1px solid var(--composer-border, #252830);
+  background: var(--composer-bg, #17191f);
+  background-size: 300% 100%;
   flex-shrink: 0;
 }
 
@@ -119,15 +122,18 @@ async function selectImage(){
   flex: 1;
   min-width: 0;
   padding: 11px 13px;
-  border: 1px solid #343842;
+  border: 1px solid var(--composer-input-border, #343842);
   border-radius: 7px;
   outline: none;
-  color: #f2f3f5;
-  background: #20232a;
+  color: var(--composer-input-fg, #f2f3f5);
+  background: var(--composer-input-bg, #20232a);
   font: inherit;
 }
+.composer input::placeholder{
+  color: var(--composer-input-ph, #858c98);
+}
 .composer input:focus{
-  border-color: #4f7fea;
+  border-color: var(--composer-input-border-focus, #4f7fea);
 }
 
 .composer button{
@@ -135,8 +141,9 @@ async function selectImage(){
   border: none;
   border-radius: 7px;
   cursor: pointer;
-  color: white;
-  background: #386be0;
+  color: var(--composer-btn-fg, white);
+  background: var(--composer-btn-bg, #386be0);
+  background-size: 300% 100%;
   font: inherit;
   font-weight: 600;
 }
